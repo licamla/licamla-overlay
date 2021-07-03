@@ -1,0 +1,11 @@
+<repositories version="1.1" encoding="unicode">
+  <repo quality="experimental" priority="50">
+    <name>licamla-overlay</name>
+    <description>for private use</description>
+    <owner>
+      <email>licamla@live.cn</email>
+      <name>licamla</name>
+    </owner>
+    <source type="git">https://github.com/licamla/licamla-overlay.git</source>
+  </repo>
+</repositories>
