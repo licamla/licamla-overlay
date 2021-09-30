@@ -9,7 +9,7 @@ gentoo overlay for private use
 [Local overlays](https://wiki.gentoo.org/wiki/Overlay/Local_overlay) should be managed via `/etc/portage/repos.conf/`.
 To enable this overlay make sure you are using a recent Portage version (at least `2.2.14`), and create a `/etc/portage/repos.conf/licamla-overlay.conf` file containing precisely:
 ```ini
-[brother-overlay]
+[licamla-overlay]
 location = /usr/local/portage/licamla-overlay
 sync-type = git
 sync-uri = https://github.com/licamla/licamla-overlay.git
