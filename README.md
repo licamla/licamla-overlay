@@ -21,7 +21,7 @@ Afterwards, simply run `emerge --sync`, and Portage should seamlessly make all o
 
 Invoke the following:
 ```bash
-layman -o https://github.com/licamla/licamla-overlay/raw/master/repositories.xml -f -a brother-overlay
+layman -o https://github.com/licamla/licamla-overlay/raw/master/repositories.xml -f -a licamla-overlay
 ```
 Or read the instructions on the [Gentoo Wiki](http://wiki.gentoo.org/wiki/Layman#Adding_custom_repositories).
 
