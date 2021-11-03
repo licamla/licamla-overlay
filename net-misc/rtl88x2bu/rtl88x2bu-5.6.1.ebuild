@@ -17,6 +17,13 @@ KEYWORDS="~amd64"
 LICENSE="MIT"
 SLOT="0"
 
+KERNEL_DEPEND="5.10.75"
+DEPEND="|| (
+    >=sys-kernel/gentoo-kernel-${KERNEL_DEPEND}
+    >=sys-kernel/gentoo-kernel-bin-${KERNEL_DEPEND}
+    >=sys-kernel/gentoo-sources-${KERNEL_DEPEND}
+)"
+
 MODULE_NAMES="88x2bu(kernel/drivers/net/wireless:${S})"
 BUILD_TARGETS="modules"
 
