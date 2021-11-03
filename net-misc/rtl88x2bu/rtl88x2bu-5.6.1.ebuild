@@ -10,7 +10,7 @@ HOMEPAGE="https://github.com/cilynx/rtl88x2bu"
 
 MY_PV="5.6.1_30362.20181109_COEX20180928-6a6a"
 MY_P="${PN}-${MY_PV}"
-SRC_URI="https://github.com/cilynx/rtl88x2bu/archive/refs/heads/${MY_PV} -> ${P}.zip"
+SRC_URI="https://github.com/cilynx/rtl88x2bu/archive/refs/heads/${MY_PV}.zip -> ${P}.zip"
 
 KEYWORDS="~amd64"
 
