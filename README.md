@@ -12,7 +12,7 @@ To enable this overlay make sure you are using a recent Portage version (at leas
 [licamla-overlay]
 location = /usr/local/portage/licamla-overlay
 sync-type = git
-sync-uri = https://github.com/licamla/licamla-overlay.git
+sync-uri = https://gitlink.org.cn/licamla/licamla-overlay.git
 priority=9999
 ```
 Afterwards, simply run `emerge --sync`, and Portage should seamlessly make all our ebuilds available.
@@ -21,7 +21,7 @@ Afterwards, simply run `emerge --sync`, and Portage should seamlessly make all o
 
 Invoke the following:
 ```bash
-layman -o https://github.com/licamla/licamla-overlay/raw/master/repositories.xml -f -a licamla-overlay
+layman -o https://www.gitlink.org.cn/attachments/entries/get_file?download_url=https://www.gitlink.org.cn/api/licamla/licamla-overlay/raw?filepath=repositories.xml&ref=master -f -a licamla-overlay
 ```
 Or read the instructions on the [Gentoo Wiki](http://wiki.gentoo.org/wiki/Layman#Adding_custom_repositories).
 
