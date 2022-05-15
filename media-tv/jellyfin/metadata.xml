@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+    <maintainer type="person">
+        <email>xgqt@protonmail.com</email>
+        <name>Maciej Barć</name>
+    </maintainer>
+    <upstream>
+        <remote-id type="github">jellyfin/jellyfin</remote-id>
+    </upstream>
+	<use>
+		<flag name="wal">开启sqlite的wal模式,该模式下,更新的数据保存在wal临时文件,等关闭数据库文件时再做合并处理,能提升数据写入的性能,但会降低查询性能.如果服务长时间开启会一直保持数据库文件的打开状态,造成wal临时文件一直增大,会占用大量的磁盘空间</flag>
+		<flag name="synchronous">sqlite同步写入,jellyfin官方是默认开启,但本overlay默认关闭.同步写入在大量更新时会使磁盘io繁忙并阻塞sqlite的查询,关闭后即使是机械硬盘也能更新媒体库时同时访问jellyfin服务.关闭后可能会在突发的磁盘断电等情况下无法及时写入数据造成数据丢失.本人认为 这可以通过重新扫描媒体库来修复,不是什么大问题,并且碰到的概率非常低</flag>
+		<flag name="big_cache">增加sqlite的缓存大小到5000</flag>
+	</use>
+</pkgmetadata>
