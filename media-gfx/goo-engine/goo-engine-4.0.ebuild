@@ -4,51 +4,65 @@
 EAPI=8
 
 PYTHON_COMPAT=( python3_{10..11} )
+# matches media-libs/osl
+LLVM_COMPAT=( {15..17} )
 
-inherit check-reqs cmake cuda flag-o-matic pax-utils python-single-r1 toolchain-funcs xdg-utils
+inherit check-reqs cmake cuda flag-o-matic llvm-r1 pax-utils python-single-r1 toolchain-funcs xdg-utils git-r3
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
-HOMEPAGE="https://www.blender.org"
+HOMEPAGE="https://www.dillongoostudios.com/gooengine"
 
 if [[ ${PV} = *9999* ]] ; then
-	# Subversion is needed for downloading unit test files
-	inherit git-r3 subversion
-	EGIT_REPO_URI="https://projects.blender.org/blender/blender.git"
+	EGIT_LFS="yes"
+	inherit git-r3
+	EGIT_REPO_URI="https://github.com/dillongoostudios/goo-engine.git"
+	EGIT_SUBMODULES=( '*' '-lib/*' )
 	ADDONS_EGIT_REPO_URI="https://projects.blender.org/blender/blender-addons.git"
+	RESTRICT="!test? ( test )"
 else
-	SRC_URI="https://download.blender.org/source/${P}.tar.xz"
-	# Update these between major releases.
-	TEST_TARBALL_VERSION="$(ver_cut 1-2).0"
-	# SRC_URI+=" test? ( https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/${PN}-${TEST_TARBALL_VERSION}-tests.tar.xz )"
+	EGIT_REPO_URI="https://github.com/dillongoostudios/goo-engine.git"
+	EGIT_BRANCH="goo-engine-v${PV}-release"
+	ADDONS_EGIT_REPO_URI="https://projects.blender.org/blender/blender-addons.git"
+	EGIT_CLONE_TYPE="shallow"
+	#SRC_URI="
+	#	https://codeload.github.com/dillongoostudios/goo-engine/zip/refs/heads/goo-engine-v${PV}-release -> goo-engine-goo-engine-v${PV}-release.zip
+	#"
+	# 	test? (
+	# 		https://projects.blender.org/blender/blender-test-data/archive/blender-v$(ver_cut 1-2)-release.tar.gz
+	# 	)
+	# "
 	KEYWORDS="~amd64 ~arm ~arm64"
+	RESTRICT="test" # the test archive returns LFS references.
+	#S="${WORKDIR}/goo-engine-goo-engine-v${PV}-release"
 fi
 
-SLOT="${PV%.*}"
 LICENSE="|| ( GPL-3 BL )"
-IUSE="+bullet +fluid +openexr +tbb
-	alembic collada +color-management cuda +cycles cycles-bin-kernels
-	debug doc +embree +ffmpeg +fftw +gmp hip jack jemalloc jpeg2k
-	man +nanovdb ndof nls openal +oidn +openmp +openpgl +opensubdiv
-	+openvdb optix osl +pdf +potrace +pugixml pulseaudio sdl
-	+sndfile test +tiff valgrind wayland +libdecor +webp X"
-RESTRICT="test"
+SLOT="${PV}"
+IUSE="
+	alembic +bullet collada +color-management cuda +cycles +cycles-bin-kernels
+	debug doc +embree experimental +ffmpeg +fftw +fluid +gmp gnome hip jack
+	jemalloc jpeg2k man +nanovdb ndof nls +oidn oneapi openal +openexr +openmp openpgl
+	+opensubdiv +openvdb optix osl +pdf +potrace +pugixml pulseaudio
+	renderdoc sdl +sndfile +tbb test +tiff valgrind vulkan wayland +webp X
+"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	alembic? ( openexr )
 	cuda? ( cycles )
-	cycles? ( openexr tiff )
+	cycles? ( openexr tiff tbb )
 	fluid? ( tbb )
+	gnome? ( wayland )
 	hip? ( cycles )
 	nanovdb? ( openvdb )
-	openvdb? ( tbb )
+	openvdb? ( tbb openexr )
 	optix? ( cuda )
-	osl? ( cycles )
-	test? ( color-management )
-	libdecor? ( wayland )"
+	osl? ( cycles pugixml )
+	test? ( color-management )"
 
 # Library versions for official builds can be found in the blender source directory in:
-# build_files/build_environment/install_deps.sh
+# build_files/build_environment/cmake/versions.cmake
 RDEPEND="${PYTHON_DEPS}
+	!media-gfx/blender:${PV}
 	app-arch/zstd
 	dev-libs/boost:=[nls?]
 	dev-libs/lzo:2=
@@ -72,11 +86,12 @@ RDEPEND="${PYTHON_DEPS}
 	collada? ( >=media-libs/opencollada-1.6.68 )
 	color-management? ( media-libs/opencolorio:= )
 	cuda? ( dev-util/nvidia-cuda-toolkit:= )
-	embree? ( >=media-libs/embree-3.13.0[raymask] )
+	embree? ( media-libs/embree:=[raymask] )
 	ffmpeg? ( media-video/ffmpeg:=[x264,mp3,encode,theora,jpeg2k?,vpx,vorbis,opus,xvid] )
 	fftw? ( sci-libs/fftw:3.0= )
 	gmp? ( dev-libs/gmp )
-	hip? ( >=dev-util/hip-5.7.1 )
+	gnome? ( gui-libs/libdecor )
+	hip? ( >=dev-util/hip-5.7:= )
 	jack? ( virtual/jack )
 	jemalloc? ( dev-libs/jemalloc:= )
 	jpeg2k? ( media-libs/openjpeg:2= )
@@ -86,19 +101,26 @@ RDEPEND="${PYTHON_DEPS}
 	)
 	nls? ( virtual/libiconv )
 	openal? ( media-libs/openal )
-	oidn? ( >=media-libs/oidn-1.4.0 )
+	oidn? ( >=media-libs/oidn-2.1.0 )
+	oneapi? ( dev-libs/intel-compute-runtime[l0] )
 	openexr? (
 		>=dev-libs/imath-3.1.4-r2:=
 		>=media-libs/openexr-3:0=
 	)
-	openpgl? ( >=media-libs/openpgl-0.5.0 )
+	openpgl? ( media-libs/openpgl:0/0.5 )
 	opensubdiv? ( >=media-libs/opensubdiv-3.5.0 )
 	openvdb? (
-		>=media-gfx/openvdb-10.1.0:=[nanovdb?]
+		>=media-gfx/openvdb-11.0.0:=[nanovdb?]
 		dev-libs/c-blosc:=
 	)
-	optix? ( <dev-libs/optix-7.5.0 )
-	osl? ( >=media-libs/osl-1.11.16.0-r3:= )
+	optix? ( dev-libs/optix )
+	osl? (
+		>=media-libs/osl-1.13:=
+		$(llvm_gen_dep '
+			>=media-libs/osl-1.13[llvm_slot_${LLVM_SLOT}]
+			media-libs/mesa[llvm_slot_${LLVM_SLOT}]
+		')
+	)
 	pdf? ( media-libs/libharu )
 	potrace? ( media-gfx/potrace )
 	pugixml? ( dev-libs/pugixml )
@@ -113,9 +135,17 @@ RDEPEND="${PYTHON_DEPS}
 		>=dev-libs/wayland-protocols-1.15
 		>=x11-libs/libxkbcommon-0.2.0
 		dev-util/wayland-scanner
-	libdecor? ( gui-libs/libdecor )
 		media-libs/mesa[wayland]
 		sys-apps/dbus
+	)
+	vulkan? (
+		media-libs/shaderc
+		dev-util/spirv-tools
+		dev-util/glslang
+		media-libs/vulkan-loader
+	)
+	renderdoc? (
+		media-gfx/renderdoc
 	)
 	X? (
 		x11-libs/libX11
@@ -126,6 +156,10 @@ RDEPEND="${PYTHON_DEPS}
 
 DEPEND="${RDEPEND}
 	dev-cpp/eigen:=
+	vulkan? (
+		dev-util/spirv-headers
+		dev-util/vulkan-headers
+	)
 "
 
 BDEPEND="
@@ -143,12 +177,17 @@ BDEPEND="
 	wayland? (
 		dev-util/wayland-scanner
 	)
+	X? (
+		x11-base/xorg-proto
+	)
 "
 
 PATCHES=(
 	"${FILESDIR}/${PN}-4.0.1-fix-cflags-cleaner.patch"  # to be dropped for releases after Dec 8, 2023
 	"${FILESDIR}/${PN}-4.0.1-openvdb-11.patch"
-	"${FILESDIR}/${PN}-4.0.1-libdecor-0.1.1.patch"
+	"${FILESDIR}/${PN}-4.0.2-FindClang.patch"
+	"${FILESDIR}/${PN}-4.0.2-CUDA_NVCC_FLAGS.patch"
+	"${FILESDIR}/${PN}-4.0.2-r1-osl-1.13.patch"
 )
 
 blender_check_requirements() {
@@ -176,35 +215,31 @@ pkg_pretend() {
 }
 
 pkg_setup() {
+	if use osl; then
+		llvm-r1_pkg_setup
+	fi
+
 	blender_check_requirements
 	python-single-r1_pkg_setup
 }
 
 src_unpack() {
-	if [[ ${PV} = *9999* ]] ; then
-		git-r3_src_unpack
-
-		git-r3_fetch "${ADDONS_EGIT_REPO_URI}"
-		git-r3_checkout "${ADDONS_EGIT_REPO_URI}" "${S}/scripts/addons"
-
-		if use test; then
-			TESTS_SVN_URL=https://svn.blender.org/svnroot/bf-blender/trunk/lib/tests
-			subversion_fetch ${TESTS_SVN_URL} ../lib/tests
-		fi
-		ASSETS_SVN_URL=https://svn.blender.org/svnroot/bf-blender/trunk/lib/assets
-		subversion_fetch ${ASSETS_SVN_URL} ../lib/assets
-	else
-		default
-		if use test; then
-			#The tests are downloaded from: https://svn.blender.org/svnroot/bf-blender/tags/blender-${SLOT}-release/lib/tests
-			mkdir -p lib || die
-			mv "${WORKDIR}/blender-${TEST_TARBALL_VERSION}-tests/tests" lib || die
-		fi
+	if ! use test; then
+		EGIT_SUBMODULES+=( '-tests/*' )
 	fi
+	git-r3_src_unpack
+	git-r3_fetch "${ADDONS_EGIT_REPO_URI}" "refs/heads/blender-v${PV}-release"
+	git-r3_checkout "${ADDONS_EGIT_REPO_URI}" "${S}/scripts/addons"
 
+	if use test; then
+		mkdir -p "${S}/tests/data/" || die
+		mv blender-test-data/* "${S}/tests/data/" || die
+	fi
 }
 
 src_prepare() {
+	use cuda && cuda_src_prepare
+
 	cmake_src_prepare
 
 	blender_get_version
@@ -219,13 +254,16 @@ src_prepare() {
 		-e "s|blender.svg|blender-${BV}.svg|" \
 		-e "s|blender-symbolic.svg|blender-${BV}-symbolic.svg|" \
 		-e "s|blender.desktop|blender-${BV}.desktop|" \
+		-e "s|org.blender.Blender.metainfo.xml|blender-${BV}.metainfo.xml|" \
 		-i source/creator/CMakeLists.txt || die
 
 	sed \
-		-e "s|Name=Blender|Name=Blender ${PV}|" \
+		-e "s|Name=Blender|Name=Blender ${BV}|" \
 		-e "s|Exec=blender|Exec=blender-${BV}|" \
 		-e "s|Icon=blender|Icon=blender-${BV}|" \
 		-i release/freedesktop/blender.desktop || die
+
+	sed -e "s|\${CMAKE_INSTALL_PREFIX}/\${BLENDER_BIN}|${T}/usr/\${BLENDER_BIN}|g" -i source/creator/CMakeLists.txt || die
 
 	mv \
 		release/freedesktop/icons/scalable/apps/blender.svg \
@@ -234,15 +272,26 @@ src_prepare() {
 		release/freedesktop/icons/symbolic/apps/blender-symbolic.svg \
 		"release/freedesktop/icons/symbolic/apps/blender-${BV}-symbolic.svg" || die
 	mv release/freedesktop/blender.desktop "release/freedesktop/blender-${BV}.desktop" || die
+	mv release/freedesktop/org.blender.Blender.metainfo.xml "release/freedesktop/blender-${BV}.metainfo.xml"
+	mv release/freedesktop/org.blender.Blender.appdata.xml "release/freedesktop/blender-${BV}.appdata.xml"
 
 	if use test; then
 		# Without this the tests will try to use /usr/bin/blender and /usr/share/blender/ to run the tests.
 		sed -e "s|set(TEST_INSTALL_DIR.*|set(TEST_INSTALL_DIR ${T}/usr)|g" -i tests/CMakeLists.txt || die
-		sed -e "s|string(REPLACE.*|set(TEST_INSTALL_DIR ${T}/usr)|g" -i build_files/cmake/Modules/GTestTesting.cmake || die
+		sed -e "s|string(REPLACE.*|set(TEST_INSTALL_DIR ${T}/usr)|g" -i build_files/cmake/testing.cmake || die
+	fi
+
+	if use vulkan; then
+		sed -e "s/extern_vulkan_memory_allocator/extern_vulkan_memory_allocator\nSPIRV-Tools-opt\nSPIRV-Tools\nSPIRV-Tools-link\nglslang\nSPIRV\nSPVRemapper/" -i source/blender/gpu/CMakeLists.txt || die
 	fi
 }
 
 src_configure() {
+	# -Werror=odr, -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/859607
+	# https://projects.blender.org/blender/blender/issues/120444
+	filter-lto
+
 	# Workaround for bug #922600
 	append-ldflags $(test-flags-CCLD -Wl,--undefined-version)
 
@@ -260,39 +309,49 @@ src_configure() {
 		-DWITH_BULLET=$(usex bullet)
 		-DWITH_CODEC_FFMPEG=$(usex ffmpeg)
 		-DWITH_CODEC_SNDFILE=$(usex sndfile)
+
 		-DWITH_CYCLES=$(usex cycles)
-		-DWITH_CYCLES_CUDA_BINARIES=$(usex cuda $(usex cycles-bin-kernels))
-		-DWITH_CYCLES_DEVICE_ONEAPI=no
+
 		-DWITH_CYCLES_DEVICE_CUDA=$(usex cuda)
-		-DWITH_CYCLES_DEVICE_HIP=$(usex hip)
+		-DWITH_CYCLES_CUDA_BINARIES="$(usex cuda $(usex cycles-bin-kernels))"
 		-DWITH_CYCLES_DEVICE_OPTIX=$(usex optix)
-		-DWITH_CYCLES_EMBREE=$(usex embree)
+
+		-DWITH_CYCLES_DEVICE_HIP="$(usex hip)"
 		-DWITH_CYCLES_HIP_BINARIES=$(usex hip $(usex cycles-bin-kernels))
-		-DWITH_CYCLES_ONEAPI_BINARIES=no
+
+		-DWITH_CYCLES_DEVICE_ONEAPI="$(usex oneapi)"
+		-DWITH_CYCLES_ONEAPI_BINARIES="$(usex oneapi $(usex cycles-bin-kernels))"
+
+		-DWITH_CYCLES_HYDRA_RENDER_DELEGATE="no" # TODO: package Hydra
+		-DWITH_CYCLES_EMBREE="$(usex embree)"
 		-DWITH_CYCLES_OSL=$(usex osl)
 		-DWITH_CYCLES_PATH_GUIDING=$(usex openpgl)
 		-DWITH_CYCLES_STANDALONE=no
 		-DWITH_CYCLES_STANDALONE_GUI=no
+
 		-DWITH_DOC_MANPAGE=$(usex man)
+		-DWITH_DRACO="no" # TODO: Package Draco
+		-DWITH_EXPERIMENTAL_FEATURES="$(usex experimental)"
 		-DWITH_FFTW3=$(usex fftw)
 		-DWITH_GHOST_WAYLAND=$(usex wayland)
 		-DWITH_GHOST_WAYLAND_APP_ID="blender-${BV}"
 		-DWITH_GHOST_WAYLAND_DBUS=$(usex wayland)
-		-DWITH_GHOST_WAYLAND_DYNLOAD=no
-		-DWITH_GHOST_WAYLAND_LIBDECOR=$(usex libdecor)
+		-DWITH_GHOST_WAYLAND_DYNLOAD="$(usex gnome)" # https://bugs.gentoo.org/930412 fixed in 4.1 # no
+		-DWITH_GHOST_WAYLAND_LIBDECOR="$(usex gnome)"
 		-DWITH_GHOST_X11=$(usex X)
 		-DWITH_GMP=$(usex gmp)
 		-DWITH_GTESTS=$(usex test)
 		-DWITH_HARU=$(usex pdf)
 		-DWITH_HEADLESS=$($(use X || use wayland) && echo OFF || echo ON)
-		-DWITH_INSTALL_PORTABLE=no
+		-DWITH_HYDRA="no" # TODO: Package Hydra
 		-DWITH_IMAGE_OPENEXR=$(usex openexr)
 		-DWITH_IMAGE_OPENJPEG=$(usex jpeg2k)
 		-DWITH_IMAGE_WEBP=$(usex webp)
 		-DWITH_INPUT_NDOF=$(usex ndof)
+		-DWITH_INSTALL_PORTABLE="no"
 		-DWITH_INTERNATIONAL=$(usex nls)
 		-DWITH_JACK=$(usex jack)
-		-DWITH_MATERIALX=no
+		-DWITH_MATERIALX="no" # TODO: Package MaterialX
 		-DWITH_MEM_JEMALLOC=$(usex jemalloc)
 		-DWITH_MEM_VALGRIND=$(usex valgrind)
 		-DWITH_MOD_FLUID=$(usex fluid)
@@ -310,21 +369,39 @@ src_configure() {
 		-DWITH_PUGIXML=$(usex pugixml)
 		-DWITH_PULSEAUDIO=$(usex pulseaudio)
 		-DWITH_PYTHON_INSTALL=no
-		-DWITH_DRACO=no
 		-DWITH_PYTHON_INSTALL_NUMPY=no
 		-DWITH_PYTHON_INSTALL_ZSTANDARD=no
+		-DWITH_RENDERDOC="$(usex renderdoc)"
 		-DWITH_SDL=$(usex sdl)
 		-DWITH_STATIC_LIBS=no
+		-DWITH_STRICT_BUILD_OPTIONS=yes
 		-DWITH_SYSTEM_EIGEN3=yes
 		-DWITH_SYSTEM_FREETYPE=yes
 		-DWITH_SYSTEM_LZO=yes
 		-DWITH_TBB=$(usex tbb)
-
-		-DWITH_USD=no
-		-DWITH_HYDRA=no
-
+		-DWITH_USD="no" # TODO: Package USD
+		-DWITH_VULKAN_BACKEND="$(usex vulkan)"
 		-DWITH_XR_OPENXR=no
 	)
+
+	# requires dev-vcs/git
+	if [[ ${PV} = *9999* ]] ; then
+		mycmakeargs+=( -DWITH_BUILDINFO="yes" )
+	else
+		mycmakeargs+=( -DWITH_BUILDINFO="no" )
+	fi
+
+	if use cuda; then
+		mycmakeargs+=(
+			-DCUDA_NVCC_FLAGS="--compiler-bindir;$(cuda_gccdir)"
+		)
+	fi
+
+	if use hip; then
+		mycmakeargs+=(
+			-DHIP_HIPCC_FLAGS="-fcf-protection=none"
+		)
+	fi
 
 	if use optix; then
 		mycmakeargs+=(
@@ -336,8 +413,8 @@ src_configure() {
 	# This is currently needed on arm64 to get the NEON SIMD wrapper to compile the code successfully
 	use arm64 && append-flags -flax-vector-conversions
 
-	append-cflags $(usex debug '-DDEBUG' '-DNDEBUG')
-	append-cppflags $(usex debug '-DDEBUG' '-DNDEBUG')
+	append-cflags "$(usex debug '-DDEBUG' '-DNDEBUG')"
+	append-cppflags "$(usex debug '-DDEBUG' '-DNDEBUG')"
 
 	if tc-is-gcc ; then
 		# These options only exist when GCC is detected.
@@ -349,7 +426,8 @@ src_configure() {
 		# Ease compiling with required gcc similar to cuda_sanitize but for cmake
 		use cuda && use cycles-bin-kernels && mycmakeargs+=( -DCUDA_HOST_COMPILER="$(cuda_gccdir)" )
 	fi
-	if tc-is-clang ; then
+
+	if tc-is-clang || use osl; then
 		mycmakeargs+=(
 			-DWITH_CLANG=yes
 			-DWITH_LLVM=yes
@@ -366,9 +444,8 @@ src_configure() {
 		mycmakeargs+=(
 			-DCYCLES_TEST_DEVICES:STRING="$(local IFS=";"; echo "${CYCLES_TEST_DEVICES[*]}")"
 			-DWITH_COMPOSITOR_REALTIME_TESTS=yes
-			-DWITH_GTESTS=yes
-			-DWITH_OPENGL_DRAW_TESTS=yes
-			-DWITH_OPENGL_RENDER_TESTS=yes
+			-DWITH_GPU_DRAW_TESTS=yes
+			-DWITH_GPU_RENDER_TESTS=yes
 		)
 	fi
 
@@ -378,7 +455,7 @@ src_configure() {
 src_test() {
 	# A lot of tests needs to have access to the installed data files.
 	# So install them into the image directory now.
-	DESTDIR="${T}" cmake_build install "$@"
+	DESTDIR="${T}" cmake_build install
 
 	blender_get_version
 	# Define custom blender data/script file paths not be able to find them otherwise during testing.
@@ -391,10 +468,20 @@ src_test() {
 	[ -d "$BLENDER_SYSTEM_SCRIPTS" ] || die "The custom script path is invalid, fix the ebuild!"
 	[ -d "$BLENDER_SYSTEM_DATAFILES" ] || die "The custom datafiles path is invalid, fix the ebuild!"
 
+	if use cuda; then
+		cuda_add_sandbox -w
+		addwrite "/dev/dri/renderD128"
+		addwrite "/dev/char/"
+	fi
+
+	if use X; then
+		xdg_environment_reset
+	fi
+
 	cmake_src_test
 
 	# Clean up the image directory for src_install
-	rm -fr "${T}"/usr || die
+	rm -fr "${T}/usr" || die
 }
 
 src_install() {
@@ -403,11 +490,14 @@ src_install() {
 	# Pax mark blender for hardened support.
 	pax-mark m "${BUILD_DIR}"/bin/blender
 
-	cmake_src_install
-
 	if use man; then
+		# XXX: Stupid temporary hack for bug #925254
+		cmake_src_install -j1
+
 		# Slot the man page
 		mv "${ED}/usr/share/man/man1/blender.1" "${ED}/usr/share/man/man1/blender-${BV}.1" || die
+	else
+		cmake_src_install
 	fi
 
 	if use doc; then
@@ -491,7 +581,7 @@ pkg_postrm() {
 
 	ewarn ""
 	ewarn "You may want to remove the following directory."
-	ewarn "~/.config/${PN}/${SLOT}/cache/"
+	ewarn "~/.config/${PN}/${BV}/cache/"
 	ewarn "It may contain extra render kernels not tracked by portage"
 	ewarn ""
 }
